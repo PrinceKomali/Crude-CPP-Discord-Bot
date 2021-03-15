@@ -9,8 +9,14 @@
 #include <typeinfo>
 #include <sstream>
 #include <string>
+#include <memory>
 #include <stdlib.h>
+#include <ctime>
+#include <stdexcept>
+#include <array>
 #include <stdio.h>
+
+
 
 using json = nlohmann::json;
 using string = std::string;
@@ -71,7 +77,7 @@ json api_call(string path) {
     }
     return json::parse("{\"Error\": \"curl request failed\"}");
 }
-void postMessage(string channel, string content) {
+json postMessage(string channel, string content) {
     string token = get_token();
     CURL* curl;
     CURLcode res;
@@ -97,15 +103,22 @@ void postMessage(string channel, string content) {
 
        //std::cout << body << std::endl;
        //std::cout << (body.find(" ") != string::npos) << std::endl;
+        string resp;
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body.c_str());
+
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeFunction);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resp);
         res = curl_easy_perform(curl);
 
         if (res != CURLE_OK)
             fprintf(stderr, "curl_easy_perform() failed: %s\n",
                 curl_easy_strerror(res));
         curl_easy_cleanup(curl);
+        return json::parse(resp);
     }
+    
     curl_global_cleanup();
+    return json::parse("{}");
 }
 
 json client_get_self(string guild = "NO_VALUE") {
@@ -198,9 +211,48 @@ void client_remove_role(string guild, string roleid, string user = "@me") {
     }
     curl_global_cleanup();
 }
+json client_message_update(string channelid, string messageid) {
+    CURLcode ret;
+    CURL* hnd;
+    struct curl_slist* slist1;
+    string url = "https://discord.com/api/v8/channels/" + channelid + "/messages/" + messageid;
+    slist1 = NULL;
+    slist1 = curl_slist_append(slist1, "Content-Type: application/json");
+    string h = "Authorization: Bot " + get_token();
+    slist1 = curl_slist_append(slist1, h.c_str());
 
-json utils_codeblock_encode(string str, string lang = "") {
+    hnd = curl_easy_init();
+    if (hnd) {
+        curl_easy_setopt(hnd, CURLOPT_BUFFERSIZE, 102400L);
+        curl_easy_setopt(hnd, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(hnd, CURLOPT_NOPROGRESS, 1L);
+        curl_easy_setopt(hnd, CURLOPT_POSTFIELDS, "{\"content\": \"it work\"}");
+        curl_easy_setopt(hnd, CURLOPT_POSTFIELDSIZE_LARGE, (curl_off_t)22);
+        curl_easy_setopt(hnd, CURLOPT_USERAGENT, "curl/7.55.1");
+        curl_easy_setopt(hnd, CURLOPT_HTTPHEADER, slist1);
+        curl_easy_setopt(hnd, CURLOPT_MAXREDIRS, 50L);
+        curl_easy_setopt(hnd, CURLOPT_CUSTOMREQUEST, "PATCH");
+        curl_easy_setopt(hnd, CURLOPT_TCP_KEEPALIVE, 1L);
+        string response;
+
+        curl_easy_setopt(hnd, CURLOPT_WRITEFUNCTION, writeFunction);
+        curl_easy_setopt(hnd, CURLOPT_WRITEDATA, &response);
+        ret = curl_easy_perform(hnd);
+        std::cout << response;
+        return json::parse(response);
+    }
+    return json::parse("{}");
+}
+
+string utils_codeblock_encode(string str, string lang = "") {
     return "```" + lang + "\n" + str + "\n```";
+}
+string utils_codeblock_decode(string str) {
+    //note to self: do this later
+    return "e";
+}
+void utils_exec_compile(string code) {
+    
 }
 
 void OnErrorCallback(const WsClientLib::WSError& err, void* pUserData)
@@ -250,7 +302,7 @@ void OnMessage(const string& m, void* pUserData)
                     postMessage(channel_id, args[1]);
                 }
             }
-            std::cout << args[0];
+            //std::cout << args[0];
             if (args[0] == "kb!roles") {    
                 //json roles = client_get_self(guild_id);
                 //   postMessage(channel_id, utils_codeblock_encode(roles.dump(2), "json"));
@@ -261,6 +313,16 @@ void OnMessage(const string& m, void* pUserData)
                 else {
                     postMessage(channel_id, "moar args pls");
                 }
+            }
+            if (args[0] == "kb!cppslots") {
+                string emotestr;
+                int num = 3;
+                json emotes = client_get_guild_emotes(guild_id);
+                for (int i = 0; i < num; i++) {
+                    emotestr += string(emotes[i]["key"]);
+                }
+                postMessage(channel_id, emotestr);
+                postMessage(channel_id, "Please Play Again");
             }
         }
         catch (string err) {
@@ -294,14 +356,9 @@ void websocketconnect(int argc, char* argv[]) {
 }
 int main(int argc, char* argv[])
 {
-      websocketconnect(argc, argv);
-
+     websocketconnect(argc, argv);
+   // client_message_update("754061738634379366", "821058775783309353");
     
-
-     //string test = client_get_guild_emotes("566694134212198481").dump(2);
-    //json j = seglist;
-    //std::cout << seglist[0];
-    //either do client_get_self() for user info or client_get_self(<guild id>) for member info
-  //  std::cout << test;
-	return 0;
+    
+    return 0;
 }

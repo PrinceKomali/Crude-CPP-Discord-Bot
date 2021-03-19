@@ -1,5 +1,9 @@
 #include <iostream>
 #include <string>
+#include <iterator>
+#include <algorithm>
+#include <random>
+#include <sstream>
 using string = std::string;
 
 
@@ -28,7 +32,9 @@ public:
             str = str.substr(startpos);
         }
         else {
+            str = str.c_str();
             str.erase(std::remove(std::begin(str), std::end(str), ' '), std::end(str));
+            str = string(str);
         }
         return str;
     }
@@ -88,14 +94,6 @@ public:
     }
 
 };
-
-
-
-
-
-
-
-
 
 
 string Utils::replace_all(string str, const string& from, const string& to) {

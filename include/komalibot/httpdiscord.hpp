@@ -1,13 +1,14 @@
 #include <nlohmann/json.hpp>
 #include <iostream>
 #include <curl/curl.h>
+#include <sstream>
 #include <komalibot/utils.hpp>
 #ifndef UTIL_CLIENT_ _
 #define UTIL_CLIENT_ _
 #endif
 using json = nlohmann::json;
 using string = std::string;
-
+Utils utils;
 size_t writeFunction(void* ptr, size_t size, size_t nmemb, string* data) {
     data->append((char*)ptr, size * nmemb);
     return size * nmemb;
@@ -21,7 +22,7 @@ public:
         return token;
     };
     json postMessage(string channel, string content, json embed = json::parse("{}")) {
-        Utils utils; 
+        
         CURL* curl;
         CURLcode res;
         string url = "https://discord.com/api/v8/channels/" + channel + "/messages";
@@ -193,7 +194,8 @@ public:
         }
         curl_global_cleanup();
     }
-    json message_update(string channelid, string messageid) {
+
+    json message_update(string channelid, string messageid, string content, json embed = json::parse("{}")) {
         CURLcode ret;
         CURL* hnd;
         struct curl_slist* slist1;
@@ -205,25 +207,51 @@ public:
 
         hnd = curl_easy_init();
         if (hnd) {
+            string newcontent = utils.replace_all(content, "\"", "\\\"");
+            newcontent = utils.replace_all(newcontent, string("\n"), string("\\n"));
+            string b = "{\"content\": \"" + newcontent + "\"}";
+            printf(b.c_str());
             curl_easy_setopt(hnd, CURLOPT_BUFFERSIZE, 102400L);
             curl_easy_setopt(hnd, CURLOPT_URL, url.c_str());
             curl_easy_setopt(hnd, CURLOPT_NOPROGRESS, 1L);
-            curl_easy_setopt(hnd, CURLOPT_POSTFIELDS, "{\"content\": \"it work\"}");
-            curl_easy_setopt(hnd, CURLOPT_POSTFIELDSIZE_LARGE, (curl_off_t)22);
-            curl_easy_setopt(hnd, CURLOPT_USERAGENT, "curl/7.55.1");
+            curl_easy_setopt(hnd, CURLOPT_POSTFIELDS, b.c_str());
             curl_easy_setopt(hnd, CURLOPT_HTTPHEADER, slist1);
-            curl_easy_setopt(hnd, CURLOPT_MAXREDIRS, 50L);
             curl_easy_setopt(hnd, CURLOPT_CUSTOMREQUEST, "PATCH");
-            curl_easy_setopt(hnd, CURLOPT_TCP_KEEPALIVE, 1L);
             string response;
 
             curl_easy_setopt(hnd, CURLOPT_WRITEFUNCTION, writeFunction);
             curl_easy_setopt(hnd, CURLOPT_WRITEDATA, &response);
             ret = curl_easy_perform(hnd);
-            std::cout << response;
             return json::parse(response);
         }
         return json::parse("{}");
+    }
+    void message_delete(string channel, string id) {
+        
+        CURLcode ret;
+        CURL* hnd;
+        struct curl_slist* slist1;
+        curl_global_init(CURL_GLOBAL_ALL);
+        slist1 = NULL;
+        string header = "Authorization: Bot " + token;
+        slist1 = curl_slist_append(slist1, header.c_str());
+        slist1 = curl_slist_append(slist1, "Content-Length: 0");
+        string url = "https://discord.com/api/v8/channels/" + channel + "/messages/" + id;
+        hnd = curl_easy_init();
+        if (hnd) {
+            curl_easy_setopt(hnd, CURLOPT_BUFFERSIZE, 102400L);
+            curl_easy_setopt(hnd, CURLOPT_URL, url.c_str());
+            curl_easy_setopt(hnd, CURLOPT_NOPROGRESS, 1L);
+            curl_easy_setopt(hnd, CURLOPT_POSTFIELDS, "");
+
+
+            curl_easy_setopt(hnd, CURLOPT_HTTPHEADER, slist1);
+            curl_easy_setopt(hnd, CURLOPT_MAXREDIRS, 50L);
+            curl_easy_setopt(hnd, CURLOPT_CUSTOMREQUEST, "DELETE");
+
+            ret = curl_easy_perform(hnd);
+        }
+        curl_global_cleanup();
     }
 
 };

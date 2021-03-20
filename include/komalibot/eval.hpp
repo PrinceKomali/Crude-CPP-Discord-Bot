@@ -21,28 +21,19 @@ string eval(string cmd, string channelid = "", string guildid = "", string autho
     ree.close();
     char buffer[128];
    string result = "";
-
-   // \"C:\\Program Files (x86)\\mingw-w64\\i686-8.1.0-posix-dwarf-rt_v6-rev0\\mingw32\\bin\\g++.exe\" WRITEFILE.cpp -L\"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TeamFoundation\\Team Explorer\\Git\\mingw32\\bin\" -o write && write
-//cd \"C:\\Program Files (x86)\\mingw-w64\\i686-8.1.0-posix-dwarf-rt_v6-rev0\\mingw32\\bin\" && g++ -L\"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TeamFoundation\\Team Explorer\\Git\\mingw32\\bin\""
-   const char* cmdstr = "g++ -std=c++17 WRITEFILE.cpp -lcurl -lwsock32 -o WRITE.exe && WRITE.exe";
-  // std::cout << cmdstr;
+   const char* cmdstr = "g++ -std=c++17 WRITEFILE.cpp -lcurl -lwsock32 -o WRITE.exe 2>&1 && WRITE";
    FILE* pipe = _popen(cmdstr, "r");
    if (!pipe) {
       return "popen failed!";
    }
 
-   // read till end of process:
    while (!feof(pipe)) {
 
-      // use buffer to read and add to result
       if (fgets(buffer, 128, pipe) != NULL)
          result += buffer;
    }
 
    int ret = _pclose(pipe);
-   if (ret == 1) {
-       result = "Error!";
-   }
    return result;
 } 
 

@@ -15,6 +15,7 @@
 #include <stdexcept>
 #include <array>
 #include <stdio.h>
+#include <komalibot/eval.hpp>
 #include <random>
 #include <komalibot/httpdiscord.hpp>
 //#include <komalibot/utils.hpp>
@@ -30,7 +31,6 @@ string get_token() {
     return token;
 }
 Client client(get_token());
-Utils utils;
 
 
 
@@ -107,6 +107,29 @@ void OnMessage(const string& m, void* pUserData)
                 client.postMessage(channel_id, emotestr);
                 client.postMessage(channel_id, "Please Play Again");
             }
+            if (utils.startsWith(content, "kb!cpp")) {
+                content = content.substr(6, content.length());
+                content = utils.codeblock_decode(content);
+              //  std::cout << content << "\n\n";
+                json id = client.postMessage(channel_id, "Compiling<a:spinny:822587419449622539>");
+                id = id["id"];
+                auto res = eval(content, channel_id, guild_id, string(author["id"]));
+             //   std::cout << "\n\n\nCOUT: " << res << "\n\n\n";
+                if (res == "") {
+                    client.message_delete(channel_id, id);
+                }
+                else {//
+                    res = utils.replace_all(res, "\\", "\\\\");
+                    res = utils.replace_all(res, "\"", "\\\"");
+                    if (res.length() > 2000) {
+                        res = res.substr(0, 2000);
+                    }
+                    string emb = "{\"color\": 65280, \"author\": {\"name\":\"stdout/stderr\"},  \"description\": \"" + utils.codeblock_encode(res, "cmd") + "\" }";
+                  
+                }
+
+
+            }
         }
         catch (string err) {
             std::cout << err << std::endl;      
@@ -139,7 +162,16 @@ void websocketconnect(int argc, char* argv[]) {
 }
 int main(int argc, char* argv[])
 {
+
+
+
+
+
+    //system("D:\\conda\\pkgs\\cling-0.8-hab3b255_0\\Library\\bin\\cling.exe \"#include <stdio.h>\n#include <komalibot/discord.h>\";");
      websocketconnect(argc, argv);
+    //client.set_token(get_token());
+   // std::cout << client.tokentest();
+    // client.message_update("754061738634379366", "821058775783309353");
     
     
     return 0;

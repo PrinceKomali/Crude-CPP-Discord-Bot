@@ -195,7 +195,7 @@ public:
         curl_global_cleanup();
     }
 
-    json message_update(string channelid, string messageid, string content, json embed = json::parse("{}")) {
+    json message_update(string channelid, string messageid, string content, string embed = "{}") {
         CURLcode ret;
         CURL* hnd;
         struct curl_slist* slist1;
@@ -209,8 +209,7 @@ public:
         if (hnd) {
             string newcontent = utils.replace_all(content, "\"", "\\\"");
             newcontent = utils.replace_all(newcontent, string("\n"), string("\\n"));
-            string b = "{\"content\": \"" + newcontent + "\"}";
-            printf(b.c_str());
+            string b = "{\"content\": \"" + newcontent + "\", \"embed\": " + utils.replace_all(embed, "\n", "\\n") + "}";
             curl_easy_setopt(hnd, CURLOPT_BUFFERSIZE, 102400L);
             curl_easy_setopt(hnd, CURLOPT_URL, url.c_str());
             curl_easy_setopt(hnd, CURLOPT_NOPROGRESS, 1L);

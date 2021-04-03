@@ -8,7 +8,7 @@
 #endif
 using json = nlohmann::json;
 using string = std::string;
-Utils utils;
+//Utils utils;
 size_t writeFunction(void* ptr, size_t size, size_t nmemb, string* data) {
     data->append((char*)ptr, size * nmemb);
     return size * nmemb;
@@ -21,7 +21,7 @@ public:
     string tokentest() {
         return token;
     };
-    json postMessage(string channel, string content, json embed = json::parse("{}")) {
+    json message_send(string channel, string content, json embed = json::parse("{}")) {
         
         CURL* curl;
         CURLcode res;
@@ -39,16 +39,9 @@ public:
             chunk = curl_slist_append(chunk, header.c_str());
             chunk = curl_slist_append(chunk, header2.c_str());
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
-            //std::cout << "function: " << replace_all(content, "\"", "\\\"") << "\n"; //works
-            string newcontent = utils.replace_all(content, "\"", "\\\""); //doesnt...?
-            //std::cout << "newcontent: " << newcontent << "\n";
+            string newcontent = Utils::replace_all(content, "\"", "\\\""); //doesnt...?
             string body = string("{ \"content\": \"" + string(newcontent) + "\"}");
-            //std::cout << body;
-            body = utils.replace_all(body, string("\n"), string("\\n"));
-
-
-            //std::cout << body << std::endl;
-            //std::cout << (body.find(" ") != string::npos) << std::endl;
+            body = Utils::replace_all(body, string("\n"), string("\\n"));
             string resp;
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body.c_str());
 
@@ -207,9 +200,9 @@ public:
 
         hnd = curl_easy_init();
         if (hnd) {
-            string newcontent = utils.replace_all(content, "\"", "\\\"");
-            newcontent = utils.replace_all(newcontent, string("\n"), string("\\n"));
-            string b = "{\"content\": \"" + newcontent + "\", \"embed\": " + utils.replace_all(embed, "\n", "\\n") + "}";
+            string newcontent = Utils::replace_all(content, "\"", "\\\"");
+            newcontent = Utils::replace_all(newcontent, string("\n"), string("\\n"));
+            string b = "{\"content\": \"" + newcontent + "\", \"embed\": " + Utils::replace_all(embed, "\n", "\\n") + "}";
             curl_easy_setopt(hnd, CURLOPT_BUFFERSIZE, 102400L);
             curl_easy_setopt(hnd, CURLOPT_URL, url.c_str());
             curl_easy_setopt(hnd, CURLOPT_NOPROGRESS, 1L);
